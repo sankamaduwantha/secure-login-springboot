@@ -15,13 +15,7 @@ import jakarta.persistence.UniqueConstraint;
 
 import java.time.Instant;
 
-/**
- * Single-use, expiring password-reset token.
- *
- * <p>Only the SHA-256 hash of the token is persisted. The raw token value exists solely in the
- * reset link delivered to the user; the service layer hashes an incoming token before looking it
- * up. This entity does not generate, hash or validate tokens — that is the service layer's job.
- */
+
 @Entity
 @Table(
         name = "tokens",
@@ -33,7 +27,6 @@ public class Token {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Lowercase hexadecimal SHA-256 digest of the raw reset token (64 characters). */
     @Column(name = "token_hash", nullable = false, length = 64)
     private String tokenHash;
 
@@ -48,7 +41,6 @@ public class Token {
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
-    /** {@code null} means the token has not been used yet. */
     @Column(name = "used_at")
     private Instant usedAt;
 
