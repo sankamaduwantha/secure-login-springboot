@@ -20,7 +20,7 @@ public class EmailService {
 
     // ---- 1. SEND EMAIL VERIFICATION LINK ----
     public void sendVerificationEmail(String toEmail, String rawToken) {
-        String link = baseUrl + "/verify-email?token=" + rawToken;
+        String link = baseUrl + "/api/auth/verify-email?token=" + rawToken;
 
         String subject = "Verify your email address";
         String body = "Click the link below to verify your email:\n\n" + link
@@ -31,7 +31,7 @@ public class EmailService {
 
     // ---- 2. SEND PASSWORD RESET LINK ----
     public void sendPasswordResetEmail(String toEmail, String rawToken) {
-        String link = baseUrl + "/reset-password?token=" + rawToken;
+        String link = baseUrl + "/api/auth/reset-password?token=" + rawToken;
 
         String subject = "Reset your password";
         String body = "Click the link below to reset your password:\n\n" + link
