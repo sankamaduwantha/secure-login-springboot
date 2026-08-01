@@ -3,99 +3,96 @@ package com.userManagement.demo.service;
 import com.userManagement.demo.model.Token;
 import com.userManagement.demo.model.User;
 import com.userManagement.demo.repository.TokenRepository;
+import com.userManagement.demo.util.CryptoUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.Optional;
 
 @Service
 public class TokenService {
 
     private final TokenRepository tokenRepository;
-    private final SecureRandom secureRandom = new SecureRandom();
+    private final CryptoUtil cryptoUtil;
 
-    // How long tokens stay valid before expiring (minutes)
-    @Value("${token.expiration-minutes:30}")
+    @Value("${app.security.token.expiration-minutes:30}")
     private long expirationMinutes;
 
-    public TokenService(TokenRepository tokenRepository) {
+    public TokenService(TokenRepository tokenRepository, CryptoUtil cryptoUtil) {
         this.tokenRepository = tokenRepository;
+        this.cryptoUtil = cryptoUtil;
     }
 
+    // ===== CREATE TOKEN =====
     public String createToken(User user) {
+        try {
+            Instant createdAt = Instant.now();
+            String email = user.getEmail();
 
-        String rawToken = generateRawToken();
+            // payload eka email + "|" + timestamp widihata handala encrypt karanawa
+            String payload = email + "|" + createdAt.toEpochMilli();
+            String rawToken = cryptoUtil.encrypt(payload);
 
-        String hashedToken = hashToken(rawToken);
+            // DB eke record eka save karanawa (usedAt = null, default)
+            Instant expiresAt = createdAt.plusSeconds(expirationMinutes * 60);
+            Token token = new Token(email, Token.TokenType.EMAIL_VERIFICATION, user, createdAt, expiresAt);
+            tokenRepository.save(token);
 
-        Instant expiryTime = Instant.now().plusSeconds(expirationMinutes * 60);
-        Token token = new Token(hashedToken, user, expiryTime);
-        tokenRepository.save(token);
-
-        return rawToken;
+            return rawToken; // methanin email link ekata yanawa
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create verification token", e);
+        }
     }
 
-    // ---- 2. VALIDATE A TOKEN (called when user clicks the email link) ----
     public Optional<Token> validateToken(String rawToken) {
-        String hashedToken = hashToken(rawToken);
 
-        Optional<Token> tokenOptional = tokenRepository.findByTokenHash(hashedToken);
-
-        if (tokenOptional.isEmpty()) {
-            return Optional.empty(); // token doesn't exist
-        }
-
-        Token token = tokenOptional.get();
-
-        if (token.getUsedAt() != null) {
-            return Optional.empty(); // already used - reject (one-time-use rule)
-        }
-
-        if (token.getExpiresAt().isBefore(Instant.now())) {
-            return Optional.empty(); // expired
-        }
-
-        return Optional.of(token);
+    String decrypted;
+    try {
+        decrypted = cryptoUtil.decrypt(rawToken);
+    } catch (Exception e) {
+        return Optional.empty();
     }
 
-    // ---- 3. MARK TOKEN AS USED (called right after a successful validation) ----
+    String[] parts = decrypted.split("\\|");
+    if (parts.length != 2) {
+        return Optional.empty();
+    }
+
+    String email = parts[0];
+    long timestampMillis;
+    try {
+        timestampMillis = Long.parseLong(parts[1]);
+    } catch (NumberFormatException e) {
+        return Optional.empty();
+    }
+    Instant tokenCreatedAt = Instant.ofEpochMilli(timestampMillis);
+
+    // expiry check - decrypted timestamp eken ma
+    if (tokenCreatedAt.isBefore(Instant.now().minusSeconds(expirationMinutes * 60))) {
+        return Optional.empty();
+    }
+
+    // email + not-used token eka DB eken gannawa (createdAt match karanne na)
+    Optional<Token> tokenOptional =
+            tokenRepository.findByEmailAndUsedAtIsNullOrderByCreatedAtDesc(email);
+
+    if (tokenOptional.isEmpty()) {
+        return Optional.empty();
+    }
+
+    Token token = tokenOptional.get();
+
+    if (!token.getEmail().equals(email)) {
+        return Optional.empty();
+    }
+
+    return Optional.of(token);
+}
+
+    // ===== MARK TOKEN AS USED =====
     public void markTokenAsUsed(Token token) {
         token.setUsedAt(Instant.now());
         tokenRepository.save(token);
-    }
-
-    // ---- HELPER: generate a secure random raw token ----
-    private String generateRawToken() {
-        byte[] randomBytes = new byte[32]; // 256 bits of randomness
-        secureRandom.nextBytes(randomBytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
-    }
-
-    // ---- HELPER: hash the raw token using SHA-256 ----
-    private String hashToken(String rawToken) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(rawToken.getBytes());
-
-            // convert bytes to a lowercase hex string (matches your Token.java column comment)
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hashBytes) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) {
-                    hexString.append('0');
-                }
-                hexString.append(hex);
-            }
-            return hexString.toString();
-
-        } catch (NoSuchAlgorithmException e) {
-            // SHA-256 is always available in the JDK, so this should never actually happen
-            throw new IllegalStateException("SHA-256 algorithm not available", e);
-        }
     }
 }

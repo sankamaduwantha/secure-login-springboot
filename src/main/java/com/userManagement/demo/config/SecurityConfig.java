@@ -1,5 +1,7 @@
 package com.userManagement.demo.config;
 
+import com.userManagement.demo.util.CryptoUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,9 +15,17 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Value("${app.security.token.secret-key}")
+    private String secretKeyBase64;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public CryptoUtil cryptoUtil() {
+        return new CryptoUtil(secretKeyBase64);
     }
 
     @Bean

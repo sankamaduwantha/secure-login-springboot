@@ -1,23 +1,11 @@
 package com.userManagement.demo.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
+
 
 import java.time.Instant;
 
-/**
- * Application user for the authentication prototype.
- *
- * <p>The {@code password} field always holds a BCrypt hash produced by the service layer;
- * a plaintext password is never assigned to it and never reaches the database.
- */
+
 @Entity
 @Table(
         name = "users",
