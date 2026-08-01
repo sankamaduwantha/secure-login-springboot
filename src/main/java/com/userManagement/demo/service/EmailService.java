@@ -10,7 +10,6 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    // Base URL of your app - used to build the verification/reset links
     @Value("${app.base-url}")
     private String baseUrl;
 
@@ -18,7 +17,6 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-    // ---- 1. SEND EMAIL VERIFICATION LINK ----
     public void sendVerificationEmail(String toEmail, String rawToken) {
         String link = baseUrl + "/api/auth/verify-email?token=" + rawToken;
 
@@ -29,18 +27,6 @@ public class EmailService {
         sendEmail(toEmail, subject, body);
     }
 
-    // ---- 2. SEND PASSWORD RESET LINK ----
-    public void sendPasswordResetEmail(String toEmail, String rawToken) {
-        String link = baseUrl + "/api/auth/reset-password?token=" + rawToken;
-
-        String subject = "Reset your password";
-        String body = "Click the link below to reset your password:\n\n" + link
-                + "\n\nThis link expires in 30 minutes. If you didn't request this, ignore this email.";
-
-        sendEmail(toEmail, subject, body);
-    }
-
-    // ---- HELPER: actually sends the email ----
     private void sendEmail(String toEmail, String subject, String body) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);

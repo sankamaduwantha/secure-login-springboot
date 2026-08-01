@@ -30,30 +30,19 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    // ---- 2. FIND USER BY EMAIL ----
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 
-    // ---- 3. CHECK LOGIN CREDENTIALS ----
     public boolean checkPassword(User user, String rawPassword) {
         return passwordEncoder.matches(rawPassword, user.getPassword());
     }
 
-    // ---- 4. MARK EMAIL AS VERIFIED ----
     public void markEmailAsVerified(User user) {
         user.setEmailVerified(true);
         userRepository.save(user);
     }
 
-    // ---- 5. UPDATE PASSWORD ----
-    public void updatePassword(User user, String newRawPassword) {
-        String hashedPassword = passwordEncoder.encode(newRawPassword);
-        user.setPassword(hashedPassword);
-        userRepository.save(user);
-    }
-
-    // ---- 6. CHECK IF EMAIL IS VERIFIED (still important - keeps your core requirement intact) ----
     public boolean isAccountUsable(User user) {
         return user.isEmailVerified();
     }
