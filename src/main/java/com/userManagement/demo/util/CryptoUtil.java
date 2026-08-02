@@ -14,13 +14,12 @@ import java.util.Base64;
 public class CryptoUtil {
 
     private static final String ALGORITHM = "AES/GCM/NoPadding";
-    private static final int GCM_IV_LENGTH = 12;   // bytes
-    private static final int GCM_TAG_LENGTH = 128;  // bits
+    private static final int GCM_IV_LENGTH = 12;  
+    private static final int GCM_TAG_LENGTH = 128;
 
     private final SecretKeySpec secretKey;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    // secretKeyBytes must be 16, 24, or 32 bytes (AES-128/192/256)
     public CryptoUtil(@Value("${app.security.token.secret-key}") String secretKeyBase64) {
         byte[] secretKeyBytes = Base64.getDecoder().decode(secretKeyBase64);
         this.secretKey = new SecretKeySpec(secretKeyBytes, "AES");
@@ -36,7 +35,6 @@ public class CryptoUtil {
 
         byte[] cipherText = cipher.doFinal(plainText.getBytes("UTF-8"));
 
-        // iv + cipherText එකට combine කරලා, එකම token string එකක් හදනවා
         ByteBuffer buffer = ByteBuffer.allocate(iv.length + cipherText.length);
         buffer.put(iv);
         buffer.put(cipherText);

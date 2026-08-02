@@ -15,6 +15,9 @@ public class Token {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name ="token_hash", length =64)
+    private String tokenHash;
+
     @Column(name = "email", nullable = false, length = 255)
     private String email;
 
@@ -44,7 +47,9 @@ public class Token {
 
     }
 
-    public Token(String email, TokenType tokenType, User user, Instant createdAt, Instant expiresAt) {
+    public Token(String tokenHash,String email, TokenType tokenType, User user, Instant createdAt, Instant expiresAt) {
+        
+        this.tokenHash = tokenHash;
         this.email = email;
         this.tokenType= tokenType;
         this.user = user;
@@ -82,5 +87,9 @@ public class Token {
 
     public User getUser(){
         return user;
+    }
+
+    public String getTokenHash() {
+        return tokenHash;
     }
 }

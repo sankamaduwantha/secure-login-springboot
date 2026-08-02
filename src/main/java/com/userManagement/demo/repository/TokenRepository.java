@@ -12,5 +12,7 @@ public interface TokenRepository extends JpaRepository<Token, Long> {
 
     Optional<Token> findByEmailAndUsedAtIsNullOrderByCreatedAtDesc(String email);
 
+    Optional<Token> findByTokenHash(String tokenHash);
+
     void deleteByUser(User user);
 }
