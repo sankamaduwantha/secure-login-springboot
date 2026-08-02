@@ -1,8 +1,6 @@
 package com.userManagement.demo.model;
 
 import jakarta.persistence.*;
-
-
 import java.time.Instant;
 
 
