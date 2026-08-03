@@ -12,10 +12,15 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TokenService tokenService;
+    private final EmailService emailService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                        TokenService tokenService, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.tokenService = tokenService;
+        this.emailService = emailService;
     }
 
     public User registerUser(String fullName, String email, String rawPassword) {
@@ -45,5 +50,24 @@ public class UserService {
 
     public boolean isAccountUsable(User user) {
         return user.isEmailVerified();
+    }
+
+
+    public void resendVerificationEmail(String email) {
+
+        Optional<User> userOpt = userRepository.findByEmail(email);
+
+        if (userOpt.isEmpty()) {
+            return;
+        }
+
+        User user = userOpt.get();
+
+        try {
+            String rawToken = tokenService.resendVerificationToken(user);
+            emailService.sendVerificationEmail(user.getEmail(), rawToken);
+        } catch (IllegalStateException e) {
+            
+        }
     }
 }

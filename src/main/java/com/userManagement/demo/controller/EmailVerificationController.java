@@ -48,4 +48,27 @@ public class EmailVerificationController {
 
         return ResponseEntity.ok(response);
     }
+
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Map<String, String>> resendVerification(@RequestBody Map<String, String> body) {
+
+        String email = body.get("email");
+
+        if (email == null || email.isBlank()) {
+            Map<String, String> errorResponse = Map.of(
+                    "message", "Email is required."
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+
+        userService.resendVerificationEmail(email);
+
+        
+        Map<String, String> response = Map.of(
+                "message", "If an account with that email exists and is not yet verified, a verification email has been sent."
+        );
+
+        return ResponseEntity.ok(response);
+    }
 }

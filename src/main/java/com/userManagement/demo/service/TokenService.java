@@ -21,6 +21,8 @@ public class TokenService {
     @Value("${app.security.token.expiration-minutes:30}")
     private long expirationMinutes;
 
+    private static final long RESEND_COOLDOWN_SECONDS = 120; 
+
     public TokenService(TokenRepository tokenRepository, CryptoUtil cryptoUtil) {
         this.tokenRepository = tokenRepository;
         this.cryptoUtil = cryptoUtil;
@@ -45,6 +47,34 @@ public class TokenService {
             throw new RuntimeException("Failed to create verification token", e);
         }
     }
+
+
+    public String resendVerificationToken(User user) {
+
+        if (user.isEmailVerified()) {
+            throw new IllegalStateException("Email is already verified.");
+        }
+
+        Optional<Token> existingTokenOpt =
+                tokenRepository.findByEmailAndUsedAtIsNullOrderByCreatedAtDesc(user.getEmail());
+
+        if (existingTokenOpt.isPresent()) {
+            Token existingToken = existingTokenOpt.get();
+
+            if (existingToken.getCreatedAt().isAfter(Instant.now().minusSeconds(RESEND_COOLDOWN_SECONDS))) {
+                throw new IllegalStateException("Please wait before requesting another verification email.");
+            }
+
+            existingToken.setUsedAt(Instant.now());
+            tokenRepository.save(existingToken);
+        }
+
+        return createToken(user);
+    }
+
+
+
+    
 
     private String hashToken(String rawToken) {
     try {
