@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="referrer" content="no-referrer">
+    <title>Email Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 80px;
+            background-color: #f5f5f5;
+        }
+        .card {
+            background: white;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .success { color: #2e7d32; }
+        .error { color: #c62828; }
+        button, input {
+            padding: 10px 20px;
+            font-size: 15px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:disabled { background-color: #999; cursor: not-allowed; }
+        input { border: 1px solid #ccc; width: 220px; }
+        #resendSection { display: none; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 id="statusTitle">Verifying your email...</h2>
+        <p id="statusMessage"></p>
+
+        <div id="resendSection">
+            <p>Need a new verification link?</p>
+            <input type="email" id="emailInput" placeholder="Your email">
+            <br>
+            <button id="resendBtn">Resend Verification Email</button>
+            <p id="resendStatus"></p>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+
+        const statusTitle = document.getElementById('statusTitle');
+        const statusMessage = document.getElementById('statusMessage');
+        const resendSection = document.getElementById('resendSection');
+
+        if (!token) {
+            statusTitle.innerText = 'Invalid link';
+            statusTitle.className = 'error';
+            statusMessage.innerText = 'No verification token found.';
+            resendSection.style.display = 'block';
+        } else {
+            fetch('/api/auth/verify-email?token=' + encodeURIComponent(token), {
+                method: 'GET'
+            })
+            .then(res => res.json().then(data => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (ok) {
+                    statusTitle.innerText = 'Success';
+                    statusTitle.className = 'success';
+                } else {
+                    statusTitle.innerText = 'Verification Failed';
+                    statusTitle.className = 'error';
+                    resendSection.style.display = 'block';
+                }
+                statusMessage.innerText = data.message;
+            })
+            .catch(() => {
+                statusTitle.innerText = 'Error';
+                statusTitle.className = 'error';
+                statusMessage.innerText = 'Something went wrong. Please try again.';
+                resendSection.style.display = 'block';
+            });
+        }
+
+        document.getElementById('resendBtn').addEventListener('click', () => {
+            const email = document.getElementById('emailInput').value.trim();
+            const resendStatus = document.getElementById('resendStatus');
+            const btn = document.getElementById('resendBtn');
+
+            if (!email) {
+                resendStatus.innerText = 'Please enter your email.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'Sending...';
+
+            fetch('/api/auth/resend-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            })
+            .then(res => res.json())
+            .then(data => {
+                resendStatus.innerText = data.message;
+                btn.disabled = false;
+                btn.innerText = 'Resend Verification Email';
+            })
+            .catch(() => {
+                resendStatus.innerText = 'Something went wrong.';
+                btn.disabled = false;
+                btn.innerText = 'Resend Verification Email';
+            });
+        });
+    </script>
+</body>
+</html>

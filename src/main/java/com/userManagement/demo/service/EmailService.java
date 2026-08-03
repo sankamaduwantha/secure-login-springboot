@@ -20,7 +20,7 @@ public class EmailService {
     }
 
     public void sendVerificationEmail(String toEmail, String rawToken) {
-        String link = baseUrl + "/api/auth/verify-email?token=" + rawToken;
+        String link = baseUrl + "/verify-email.html?token=" + rawToken;
 
         String subject = "Verify your email address";
 
